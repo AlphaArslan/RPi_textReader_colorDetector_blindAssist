@@ -1,19 +1,22 @@
 ############# IMPORT
-from gtts import gTTS
+from gtts import gTTS						#google text to speech
 from PIL import Image
 import RPi.GPIO as GPIO
 import picamera
 import pytesseract
 import os
 import time
-import webcolors
-
+import webcolors    						#for converting RGB codes into names
+								            #Ex. (0, 0, 0)-----> "Black"
 ############# Global
-DEBUG = True
+DEBUG = True							    #make it FALSE after you make sure everything is running smoothly
+
 # constants
-IMAGE_PATH = "testocr.png"
-Mp3FileName = "speech.mp3"
-CYCLES_NUM = 30
+project_path = os.path.dirname(os.path.realpath(__file__))	#returns the path of our project directory where main.py is.
+IMAGE_PATH   = project_path + "/temp/image.png"
+Mp3File      = project_path + "/temp/speech.mp3"
+
+CYCLES_NUM   = 30						     #used in the process of getting readings from color sensor
 
 # pins
 trig1 = 2  # read text trigger
@@ -26,24 +29,28 @@ signal = 25
 ############# Functions
 def read_text():
     # capture the image and save it
-    with picamera.PiCamera() as camera:
-        camera.resolution = (1280, 720)
-        camera.capture(IMAGE_PATH)
-    im = Image.open(IMAGE_PATH)
+    try:
+        with picamera.PiCamera() as camera:
+            camera.resolution = (1280, 720)
+            camera.capture(IMAGE_PATH)
+    except picamera.exc.PiCameraMMALError:
+        print("\n\tCamera Not Detected\n")
+        return -1
+
     # extract the text
+    im = Image.open(IMAGE_PATH)
     text = pytesseract.image_to_string(im, lang='eng')
+    if text == "":
+        text = "No Text"
     if DEBUG is True:
         print("..\n")
         print(text)
         print("..\n")
-    try:
-        speech = gTTS(text=text, lang='en', slow=False)
-    except AssertionError :
-        print ("No Text in Image ..  Or Image not clear")
-    else:
-        # play sound
-        speech.save(Mp3FileName)
-        os.system("mpg123 " + Mp3FileName)
+
+    #text to speech
+    speech = gTTS(text=text, lang='en', slow=False)
+    speech.save(Mp3File)
+    os.system("mpg123 " + Mp3FileName)
 
 
 def detect_color_from_sensor():
@@ -197,7 +204,7 @@ while True:
         color = rgb_to_str(r, g, b)
         print(color)
         speech = gTTS(text=color, lang='en', slow=False)
-        speech.save(Mp3FileName)
-        os.system("mpg123 " + Mp3FileName)
+        speech.save(Mp3File)
+        os.system("mpg123 " + Mp3File)
     print("Waiting for signal")
     time.sleep(0.1)
