@@ -1,0 +1,6 @@
+1- Open Terminal:
+    << sudo nano /etc/rc.local >>
+2- Search for the line
+    << exit 0 >>
+3- In the line above, put this command
+    << sudo python3 /home/pi/Desktop/main.py >>           # I suppose you have the main.py on desktop
