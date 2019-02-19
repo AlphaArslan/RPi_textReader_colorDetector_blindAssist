@@ -16,7 +16,7 @@ project_path = os.path.dirname(os.path.realpath(__file__))	#returns the path of 
 IMAGE_PATH   = project_path + "/temp/image.png"
 Mp3File      = project_path + "/temp/speech.mp3"
 
-CYCLES_NUM   = 30						     #used in the process of getting readings from color sensor
+CYCLES_NUM   = 100						     #used in the process of getting readings from color sensor
 
 # pins
 trig1 = 2  # read text trigger
@@ -106,36 +106,36 @@ def from_hz_to_RGB(r, g, b):
         print("Converting Hz to RGB")
     # values got from calibration
     # red
-    # 11000 Hz -----> 0   R
-    # 27500 Hz -----> 255 R
+    # 2550  Hz -----> 0   R
+    # 18000 Hz -----> 255 R
 
-    r = - 11000
+    r -= 2550
 
-    # 0    Hz -----> 0   R
-    # 16500 Hz -----> 255 R
-    r = (r / 16500) * 255
+    # 0     Hz -----> 0   R
+    # 15450 Hz -----> 255 R
+    r = r / 15450 * 255
 
 
     # green
-    # 13000 Hz -----> 0   G
-    # 27500 Hz -----> 255 G
+    # 2550  Hz -----> 0   G
+    # 21000 Hz -----> 255 G
 
-    g = - 13000
+    g -= 2550
 
     # 0     Hz -----> 0   G
-    # 14500 Hz -----> 255 G
-    g = (g / 14500) * 255
+    # 18450 Hz -----> 255 G
+    g = (g / 18450) * 255
 
 
     # blue
-    # 15000 Hz -----> 0   B
-    # 33000 Hz -----> 255 B
+    # 3500 Hz -----> 0   B
+    # 26000 Hz -----> 255 B
 
-    b = - 15000
+    b -= 3500
 
     # 0     Hz -----> 0   B
-    # 18000 Hz -----> 255 B
-    b = (b / 18000) * 255
+    # 22500 Hz -----> 255 B
+    b = (b / 22500) * 255
 
 
     if DEBUG is True:
