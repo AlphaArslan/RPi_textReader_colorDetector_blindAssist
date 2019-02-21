@@ -9,7 +9,7 @@ import time
 import webcolors    						#for converting RGB codes into names
 								            #Ex. (0, 0, 0)-----> "Black"
 ############# Global
-DEBUG = True							    #make it FALSE after you make sure everything is running smoothly
+DEBUG = False							    #make it FALSE after you make sure everything is running smoothly
 
 # constants
 project_path = os.path.dirname(os.path.realpath(__file__))	#returns the path of our project directory where main.py is.
@@ -25,8 +25,14 @@ s2 = 23
 s3 = 24
 signal = 25
 
+buzzer = 22
 
 ############# Functions
+def buz():
+	GPIO.output(buzzer,GPIO.HIGH)
+	time.sleep(0.5)
+	GPIO.output(buzzer,GPIO.LOW)
+
 def read_text():
     # capture the image and save it
     try:
@@ -50,7 +56,7 @@ def read_text():
     #text to speech
     speech = gTTS(text=text, lang='en', slow=False)
     speech.save(Mp3File)
-    os.system("mpg123 " + Mp3FileName)
+    os.system("mpg123 " + Mp3File)
 
 
 def detect_color_from_sensor():
@@ -107,35 +113,35 @@ def from_hz_to_RGB(r, g, b):
     # values got from calibration
     # red
     # 2550  Hz -----> 0   R
-    # 18000 Hz -----> 255 R
+    # 16000 Hz -----> 255 R
 
     r -= 2550
 
     # 0     Hz -----> 0   R
-    # 15450 Hz -----> 255 R
-    r = r / 15450 * 255
+    # 13450 Hz -----> 255 R
+    r = r / 13450 * 255
 
 
     # green
     # 2550  Hz -----> 0   G
-    # 21000 Hz -----> 255 G
+    # 20500 Hz -----> 255 G
 
     g -= 2550
 
     # 0     Hz -----> 0   G
-    # 18450 Hz -----> 255 G
-    g = (g / 18450) * 255
+    # 17950 Hz -----> 255 G
+    g = (g / 17950) * 255
 
 
     # blue
     # 3500 Hz -----> 0   B
-    # 26000 Hz -----> 255 B
+    # 23000 Hz -----> 255 B
 
     b -= 3500
 
     # 0     Hz -----> 0   B
-    # 22500 Hz -----> 255 B
-    b = (b / 22500) * 255
+    # 20500 Hz -----> 255 B
+    b = (b / 20500) * 255
 
 
     if DEBUG is True:
@@ -180,6 +186,7 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setup(signal, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(s2, GPIO.OUT)
 GPIO.setup(s3, GPIO.OUT)
+GPIO.setup(buzzer,GPIO.OUT)
 GPIO.setup(trig1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(trig2, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
@@ -188,6 +195,7 @@ while True:
     # check for read text signal
     if GPIO.input(trig1) == 0:
         print("Read Text")
+        buz()
         read_text()
 
     # check for detect color signal
