@@ -1,3 +1,6 @@
+=> Code still needs optimization .
+=> Some code peices were taken from others .
+============================================================================
 This project is event triggered Text reader and color detector for the blind.
 How it works:
 	- there are two triggers (push buttons).
