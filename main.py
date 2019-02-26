@@ -4,31 +4,23 @@ from PIL import Image
 import RPi.GPIO as GPIO
 import picamera
 import pytesseract
+import requests
+import json
 import os
 import time
 import webcolors                            #for converting RGB codes into names
                                             #Ex. (0, 0, 0)-----> "Black"
 
-
-from imutils.object_detection import non_max_suppression
-import numpy as np
-import cv2
-
-
 ############# Global
 DEBUG = True                               #make it FALSE after you make sure everything is running smoothly
+API_KEY= "get-yours"			   #https://ocr.space/ocrapi
 
 # constants
 project_path = os.path.dirname(os.path.realpath(__file__))  #returns the path of our project directory where main.py is.
 IMAGE_PATH   = project_path + "/temp/image.png"
 Mp3File      = project_path + "/temp/speech.mp3"
-EastFile     = project_path + "/temp/frozen_east_text_detection.pb"
 
 CYCLES_NUM   = 100                           #used in the process of getting readings from color sensor
-min_confidence = 0.5
-newW = 320
-newH = 320
-
 
 # pins
 trig1 = 2  # read text trigger
@@ -40,63 +32,29 @@ signal = 25
 buzzer = 22
 
 ############# Functions
-def decode_predictions(scores, geometry):
-    # grab the number of rows and columns from the scores volume, then
-    # initialize our set of bounding box rectangles and corresponding
-    # confidence scores
-    (numRows, numCols) = scores.shape[2:4]
-    rects = []
-    confidences = []
+def ocr_space_file(filename, overlay=False, api_key='helloworld', language='eng'):
 
-    # loop over the number of rows
-    for y in range(0, numRows):
-        # extract the scores (probabilities), followed by the
-        # geometrical data used to derive potential bounding box
-        # coordinates that surround text
-        scoresData = scores[0, 0, y]
-        xData0 = geometry[0, 0, y]
-        xData1 = geometry[0, 1, y]
-        xData2 = geometry[0, 2, y]
-        xData3 = geometry[0, 3, y]
-        anglesData = geometry[0, 4, y]
 
-        # loop over the number of columns
-        for x in range(0, numCols):
-            # if our score does not have sufficient probability,
-            # ignore it
-            if scoresData[x] < min_confidence:
-                continue
-
-            # compute the offset factor as our resulting feature
-            # maps will be 4x smaller than the input image
-            (offsetX, offsetY) = (x * 4.0, y * 4.0)
-
-            # extract the rotation angle for the prediction and
-            # then compute the sin and cosine
-            angle = anglesData[x]
-            cos = np.cos(angle)
-            sin = np.sin(angle)
-
-            # use the geometry volume to derive the width and height
-            # of the bounding box
-            h = xData0[x] + xData2[x]
-            w = xData1[x] + xData3[x]
-
-            # compute both the starting and ending (x, y)-coordinates
-            # for the text prediction bounding box
-            endX = int(offsetX + (cos * xData1[x]) + (sin * xData2[x]))
-            endY = int(offsetY - (sin * xData1[x]) + (cos * xData2[x]))
-            startX = int(endX - w)
-            startY = int(endY - h)
-
-            # add the bounding box coordinates and probability score
-            # to our respective lists
-            rects.append((startX, startY, endX, endY))
-            confidences.append(scoresData[x])
-
-    # return a tuple of the bounding boxes and associated confidences
-    return (rects, confidences)
-
+    payload = {'isOverlayRequired': overlay,
+               'apikey': api_key,
+               'language': language,
+               }
+    with open(filename, 'rb') as f:
+        r = requests.post('https://api.ocr.space/parse/image',
+                          files={filename: f},
+                          data=payload,
+                          )
+    m = r.content.decode()
+    if DEBUG is True:
+        print(".......")
+        print(".......")
+        print(".......")
+        print(m)
+        print(".......")
+        print(".......")
+        print(".......")
+    jsonstr = json.loads(m)
+    return jsonstr["ParsedResults"][0]["ParsedText"]
 
 
 def buz():
@@ -108,40 +66,17 @@ def read_text():
     # capture the image and save it
     try:
         with picamera.PiCamera() as camera:
-            camera.resolution = (1280, 720)
+            camera.resolution = (800, 600)
             camera.capture(IMAGE_PATH)
     except picamera.exc.PiCameraMMALError:
         print("\n\tCamera Not Detected\n")
         return -1
 
     # extract the text
-    image = cv2.imread(IMAGE_PATH)
-    
-    layerNames = [
-        "feature_fusion/Conv_7/Sigmoid",
-        "feature_fusion/concat_3"]
-    
-    net = cv2.dnn.readNet(EastFile)
-    
-    image = cv2.resize(image, (newW, newH))
-    (H, W) = image.shape[:2]
-    
-    blob = cv2.dnn.blobFromImage(image, 1.0, (H, W),
-        (123.68, 116.78, 103.94), swapRB=True, crop=False)
-    net.setInput(blob)
-    (scores, geometry) = net.forward(layerNames)
 
-    (rects, confidences) = decode_predictions(scores, geometry)
-    boxes = non_max_suppression(np.array(rects), probs=confidences)
-    
     text = ""
-    
-    for (startX, startY, endX, endY) in boxes:
-        roi = image[startY:endY, startX:endX]
-        config = ("-l eng --oem 1 --psm 7")
-        text += pytesseract.image_to_string(roi, config=config)
-    
-    
+    text = ocr_space_file(filename=IMAGE_PATH)
+
     if text == "":
         text = "No Text"
     if DEBUG is True:
